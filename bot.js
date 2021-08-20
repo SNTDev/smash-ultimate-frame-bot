@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const auth = require('./auth.json');
 const fs = require('fs');
-const { scrapAll, postFrameData } = require('./ultimate-crawler');
+const { scrapAll } = require('./ultimate-crawler');
 const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
@@ -14,7 +14,7 @@ async function init() {
   client.on("messageCreate", async msg => {
     const channel = msg.channel;
     if (msg.content === "조커 옆비") {
-      const frameDataMsg = await channel.send(postFrameData(charFrameData['joker']['Side B']));
+      const frameDataMsg = await channel.send(postFrameData('Joker', charFrameData['joker']['Side B']));
 
       await frameDataMsg.react('👀');
 
@@ -22,7 +22,7 @@ async function init() {
         return reaction.emoji.name === '👀' && user.id != client.user.id;
       };
 
-      const collector = frameDataMsg.createReactionCollector({filter, time: 30000});
+      const collector = frameDataMsg.createReactionCollector({filter, time: 60000});
       collector.once('collect', async (reaction) => {
         console.log(reaction.emoji.name);
         await channel.send({
@@ -33,6 +33,23 @@ async function init() {
   })
 
   client.login(auth.token);
+}
+
+function postFrameData(charName, charFrameData) {
+  return `${charName} - ${charFrameData['movename']}
+\`\`\`css
+${charFrameData['startup']} Frame Startup
+[${charFrameData['advantage']} On Shield]
+Active on ${charFrameData['activeframes']}
+
+${charFrameData['totalframes']} Total Frames
+${charFrameData['landinglag']} Frames Landing Lag
+${charFrameData['basedamage']}% Base Damage
+${charFrameData['shieldlag']} Shield Lag
+${charFrameData['shieldstun']} Shield Stun
+Note: ${charFrameData['notes'].replace(/'/g, '`')}
+\`\`\`
+React with 👀 within 60s if you want to see the hitbox`
 }
 
 init();

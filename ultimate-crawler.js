@@ -101,15 +101,6 @@ async function scrapAll() {
     return res;
 }
 
-function postFrameData(charFrameData) {
-    return `${charFrameData['movename']}
-${charFrameData['startup']} Frame Startup
-${charFrameData['advantage']} On Shield
-Active on ${charFrameData['activeframes']}
-react 👀 if you want to see hitbox`
-}
-
 module.exports = {
     scrapAll,
-    postFrameData,
 };
