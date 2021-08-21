@@ -49,7 +49,7 @@ async function scrapCharacterFrames(name) {
         name,
     };
     $('.moves > .movecontainer').each((i, e) => {
-        const movename = $(e).find('.movename').text().replace(/\([A-Za-z ]*\)/g, '').trim();
+        const movename = $(e).find('.movename').not('.input').text().trim();
         const startup = $(e).find('.startup').text().trim();
         const totalframes = $(e).find('.totalFrames').text().trim();
         const landinglag = $(e).find('.landinglag').text().trim();
@@ -77,6 +77,8 @@ async function scrapCharacterFrames(name) {
             hitbox,
         }
     });
+
+    // console.log(charData);
 
     return charData;
 }
