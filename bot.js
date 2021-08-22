@@ -1,5 +1,7 @@
 const Discord = require('discord.js');
 const dotenv = require('dotenv');
+dotenv.config();
+
 const PGClient = require('pg').Client;
 const fs = require('fs');
 
@@ -9,8 +11,6 @@ const { createEmbedFrameMessage } = require('./message-poster');
 const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 const numberReactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '0️⃣'];
-
-dotenv.config();
 
 async function initDB() {
   const client = new PGClient();
@@ -30,13 +30,20 @@ async function init() {
   client.on("messageCreate", async msg => {
     const channel = msg.channel;
     
-    if (msg.content.startsWith('.') && msg.content.split(' ')[0] == ".프레임") {
-      const found = findMove('Side B', charFrameData['joker']).slice(0, 10);
-      console.log(found);
+    if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
+      const splited = msg.content.split(' ');
+      if (splited.length != 3) {
+        await channel.send(`명령어 규약이 맞지 않습니다.
+\`\`\`?프레임 캐릭터이름 무브셋이름\`\`\``);
+        return;
+      }
+      const charName = splited[1].toLowerCase();
+      const moveName = splited[2].toLowerCase();
+      const found = findMove(moveName, charFrameData[charName]).slice(0, 10);
       if (found.length > 1) {
-        await sendChoiceMessage(channel, 'joker', 'Side B', found);
+        sendChoiceMessage(channel, charName, moveName, found);
       } else {
-        await sendFrameMessage(channel, 'joker', 'Side B', found[0]);
+        sendFrameMessage(channel, charName, moveName, found[0]);
       }
     }
   })
@@ -45,7 +52,7 @@ async function init() {
 }
 
 async function sendChoiceMessage(channel, name, move, charMoves) {
-  const description = charMoves.map((e, i) => `${i + 1 == 10 ? 0 : i+1}. ${e['movename']}`).join('\n');
+  const description = charMoves.map((e, i) => `${i + 1 == 10 ? 0 : i+1}. ${e['displayname']}`).join('\n');
 
   const embedFrameMessageFields = {
     title: `Found Move List`,
@@ -56,7 +63,10 @@ async function sendChoiceMessage(channel, name, move, charMoves) {
   };
 
   const choiceMsg = await channel.send({ embeds: [embedFrameMessageFields] });
-  await Promise.all(charMoves.map((e, i) => choiceMsg.react(numberReactions[i])));
+  for (let i = 0; i < charMoves.length; i++) {
+    await choiceMsg.react(numberReactions[i]);
+  }
+  // await Promise.all(charMoves.map((e, i) => choiceMsg.react(numberReactions[i])));
 
   const filter = (reaction, user) => {
     return numberReactions.find((e) => e == reaction.emoji.name) && user.id != client.user.id;
@@ -83,7 +93,7 @@ async function sendFrameMessage(channel, name, move, charMoveFrameData) {
     await Promise.all(charMoveFrameData['hitbox'].map((e, i) => {
       return channel.send({
         embeds: [{
-          title: `${capitalize(name)} - ${charMoveFrameData['movename']} - hitbox ${i + 1}`,
+          title: `${capitalize(name)} - ${charMoveFrameData['displayname']} - hitbox ${i + 1}`,
           image: {
             url: charMoveFrameData['hitbox'][i],
           },

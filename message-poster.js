@@ -2,7 +2,7 @@ const { MessageEmbed } = require('discord.js');
 
 function createEmbedFrameMessage(charName, charFrameData) {
     const embedFrameMessageFields = {
-        title: `${charName} - ${charFrameData['movename']}`,
+        title: `${charName} - ${charFrameData['displayname']}`,
         fields: [
             {
                 name: 'Startup Frame',

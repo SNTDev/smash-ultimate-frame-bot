@@ -12,7 +12,7 @@ axios.interceptors.response.use(response => {
     const originalRequest = config;
 
     if (status === 503) {
-        console.log('Retry...')
+        console.log('Retry...');
         return sleepRequest(1000, originalRequest);
     } else {
         return Promise.reject(error);
@@ -49,7 +49,8 @@ async function scrapCharacterFrames(name) {
         name,
     };
     $('.moves > .movecontainer').each((i, e) => {
-        const movename = $(e).find('.movename').not('.input').text().trim();
+        const movename = $(e).find('.movename').not('.input').text().replace(/ /g, '').toLowerCase().trim();
+        const displayname = $(e).find('.movename').not('.input').text().trim();
         const startup = $(e).find('.startup').text().trim();
         const totalframes = $(e).find('.totalFrames').text().trim();
         const landinglag = $(e).find('.landinglag').text().trim();
@@ -65,6 +66,7 @@ async function scrapCharacterFrames(name) {
 
         charData[movename] = {
             movename,
+            displayname,
             startup,
             totalframes,
             landinglag,
@@ -87,15 +89,15 @@ async function scrapAll() {
     const names = await scrapCharacterNames();
     const res = {};
 
-    for (let i = 0; i < names.length; i += 5) {
-        const slicedNames = names.slice(i, i + 5);
+    for (let i = 0; i < names.length; i += 10) {
+        const slicedNames = names.slice(i, i + 10);
         const charFramesList = await Promise.all(slicedNames.map((e) => scrapCharacterFrames(e)));
 
         charFramesList.forEach((e) => {
             res[e['name']] = e;
         })
 
-        console.log(`Scrapped ${i + 5}th Character....`);
+        console.log(`Scrapped ${i + 10}th Character....`);
     }
 
     fs.writeFileSync('character-frame-data.json', JSON.stringify(res));
