@@ -56,7 +56,7 @@ async function scrapCharacterFrames(name) {
                         ? $(e).find('.movename').not('.input').text().trim()
                         : 'Air Dodge';
     const startup = $(e).find('.startup').text().trim();
-    const totalframes = $(e).find('.totalFrames').text().trim();
+    const totalframes = $(e).find('.totalframes').text().trim();
     const landinglag = $(e).find('.landinglag').text().trim();
     const notes = $(e).find('.notes').text().trim();
     const basedamage = $(e).find('.basedamage').text().trim() + '%';
