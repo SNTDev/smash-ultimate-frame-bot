@@ -18,7 +18,7 @@ let db;
 let allCharacterFrameData;
 
 async function initDB() {
-  const client = new PGClient();
+  const client = new PGClient(process.env.DATABASE_URL);
   await client.connect();
 
   return client;
