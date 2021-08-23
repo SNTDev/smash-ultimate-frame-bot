@@ -249,7 +249,7 @@ or
 
     try {
       // console.log(nickname, moveName);
-      await this.bot.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, NULL)`, [nickname, moveName]);
+      await this.bot.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, 'all')`, [nickname, moveName]);
 
       await channel.send(`추가 완료! 이제 무브셋 이름 ${splited[2]} -> ${moveName}로 인식합니다.`);
     } catch (e) {

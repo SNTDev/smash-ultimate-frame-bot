@@ -19,12 +19,12 @@ let db;
 let allCharacterFrameData;
 
 async function initDB() {
-  const client = new PGClient({
+  const client = !!process.env.DATABASE_URL ? new PGClient({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
-  });
+  }) : new PGClient();
   await client.connect();
 
   return client;
