@@ -6,14 +6,38 @@ class FrameBot {
     this.allCharacterFrameData = allCharacterFrameData;
   }
 
+  async isCharacterNicknameInDB(nickname) {
+    const res = await this.db.query('SELECT character FROM character_nickname WHERE nickname = ($1)', [nickname]);
+
+    return res.rows.length > 0;
+  }
+
+  async isCharacterMoveNicknameInDB(nickname, charName) {
+    const res = await this.db.query('SELECT move FROM move_nickname WHERE nickname = ($1) AND character = ($2)', [nickname, charName]);
+
+    return res.rows.length > 0;
+  }
+
+  async isMoveNicknameInDB(nickname) {
+    const res = await this.db.query('SELECT move FROM move_nickname WHERE nickname = ($1)', [nickname]);
+
+    return res.rows.length > 0;
+  }
+
   async getTranslatedCharacterName(nickname) {
     const res = await this.db.query('SELECT character FROM character_nickname WHERE nickname = ($1)', [nickname]);
 
     return res.rows.length > 0 ? res.rows[0]['character'] : nickname;
   }
 
+  async getTranslatedCharacterMoveName(nickname, charName) {
+    const res = await this.db.query('SELECT move FROM move_nickname WHERE nickname = ($1) AND character = ($2)', [nickname, charName]);
+
+    return res.rows.length > 0 ? res.rows[0]['move'] : nickname;
+  }
+
   async getTranslatedMoveName(nickname) {
-    const res = await this.db.query('SELECT move FROM move_nickname WHERE nickname = ($1)', [nickname]);
+    const res = await this.db.query('SELECT move FROM move_nickname WHERE nickname = ($1) AND character = \'all\'', [nickname]);
 
     return res.rows.length > 0 ? res.rows[0]['move'] : nickname;
   }
@@ -83,7 +107,7 @@ class BotFrameCommand {
         },
       ],
       footer: {
-        text: `React with 👀 within 60s if you want to see the hitbox`,
+        text: charFrameData['hitbox'].length > 0 ? `React with 👀 within 60s if you want to see the hitbox` : `No hitbox`,
       },
     }
 
@@ -99,7 +123,9 @@ class BotFrameCommand {
       return;
     }
     const charName = (await this.bot.getTranslatedCharacterName(splited[1].toLowerCase())).toLowerCase();
-    const moveName = (await this.bot.getTranslatedMoveName(splited[2].toLowerCase())).toLowerCase();
+    const isCharacterMove = await this.bot.isCharacterMoveNicknameInDB(splited[2].toLowerCase(), charName);
+    const moveName = isCharacterMove ? (await this.bot.getTranslatedCharacterMoveName(splited[2].toLowerCase(), charName)).toLowerCase()
+                                     : (await this.bot.getTranslatedMoveName(splited[2].toLowerCase())).toLowerCase();
     try {
       if (this.bot.allCharacterFrameData[charName] == null) {
         await channel.send(`캐릭터를 찾을 수 없습니다.`);
@@ -122,6 +148,12 @@ class BotFrameCommand {
     }
   }
 
+  async reactNumbers(choiceMsg, charMoves) {
+    for (let i = 0; i < charMoves.length; i++) {
+      await choiceMsg.react(this.numberReactions[i]);
+    }
+  }
+
   async sendChoiceMessage(name, move, charMoves) {
     const channel = this.msg.channel;
     const description = charMoves.map((e, i) => `${i + 1 == 10 ? 0 : i + 1}. ${e['displayname']}`).join('\n');
@@ -135,13 +167,11 @@ class BotFrameCommand {
     };
 
     const choiceMsg = await channel.send({ embeds: [embedFrameMessageFields] });
-    for (let i = 0; i < charMoves.length; i++) {
-      await choiceMsg.react(this.numberReactions[i]);
-    }
+    this.reactNumbers(choiceMsg, charMoves);
     // await Promise.all(charMoves.map((e, i) => choiceMsg.react(numberReactions[i])));
 
     const filter = (reaction, user) => {
-      return this.numberReactions.find((e) => e == reaction.emoji.name) && user.id != this.bot.client.user.id;
+      return this.numberReactions.find((e) => e == reaction.emoji.name) && user.id == this.msg.author.id;
     };
 
     const collector = choiceMsg.createReactionCollector({ filter, time: 60000 });
@@ -160,6 +190,8 @@ class BotFrameCommand {
     const filter = (reaction, user) => {
       return reaction.emoji.name === '👀' && user.id != this.bot.client.user.id;
     };
+
+    if(charMoveFrameData['hitbox'].length == 0) return;
 
     await frameDataMsg.react('👀');
 
@@ -203,11 +235,14 @@ class BotAddNicknameCommand {
     const channel = this.msg.channel;
 
     const splited = this.msg.content.split(' ');
-    if (splited.length != 4 || (splited[1] != '캐릭터' && splited[1] != '무브셋')) {
+    if (!(splited.length == 4 && (splited[1] == '캐릭터' || splited[1] == '무브셋'))
+       && !(splited.length == 5 && (splited[1] == '고유무브셋'))) {
       await channel.send(`명령어 규약이 맞지 않습니다. 다음 규약을 맞춰서 입력해주세요. (약어와 이름에 공백은 있으면 안됩니다.)
 \`\`\`?약어추가 캐릭터 추가할약어 캐릭터이름(약어)
 or
-?약어추가 무브셋 추가할약어 무브셋이름(약어)\`\`\``);
+?약어추가 무브셋 추가할약어 무브셋이름(약어)
+or
+?약어추가 고유무브셋 캐릭터(약어) 추가할약어 무브셋이름(약어)\`\`\``);
       return;
     }
     if (splited[1] == '캐릭터') {
@@ -215,6 +250,9 @@ or
     }
     else if (splited[1] == '무브셋') {
       await this.runAddMoveNicknameCommand();
+    }
+    else if (splited[1] == '고유무브셋') {
+      await this.runAddCharacterMoveNicknameCommand();
     }
   }
 
@@ -259,6 +297,29 @@ or
       }
     }
   }
+
+  async runAddCharacterMoveNicknameCommand() {
+    const channel = this.msg.channel;
+    const splited = this.msg.content.split(' ');
+
+    const charName = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+    const nickname = splited[3].toLowerCase();
+    const isCharacterMove = await this.bot.isCharacterMoveNicknameInDB(splited[4].toLowerCase(), charName);
+    const moveName = isCharacterMove ? (await this.bot.getTranslatedCharacterMoveName(splited[4].toLowerCase(), charName)).toLowerCase()
+                                     : (await this.bot.getTranslatedMoveName(splited[4].toLowerCase())).toLowerCase();
+
+    try {
+      // console.log(nickname, moveName);
+      await this.bot.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, $3)`, [nickname, moveName, charName]);
+
+      await channel.send(`추가 완료! 이제 캐릭터 ${charName}에 한하여 무브셋 이름 ${splited[3]} -> ${moveName}로 인식합니다.`);
+    } catch (e) {
+      console.log(e);
+      if (e.code === '23505') {
+        await channel.send(`약어 추가에 실패하였습니다. 이미 존재하는 약어입니다.`);
+      }
+    }
+  }
 }
 
 class BotRemoveNicknameCommand {
@@ -267,26 +328,17 @@ class BotRemoveNicknameCommand {
     this.msg = msg;
   }
 
-  async isCharacterNicknameInDB(nickname) {
-    const res = await this.bot.db.query('SELECT character FROM character_nickname WHERE nickname = ($1)', [nickname]);
-
-    return res.rows.length > 0;
-  }
-
-  async isMoveNicknameInDB(nickname) {
-    const res = await this.bot.db.query('SELECT move FROM move_nickname WHERE nickname = ($1)', [nickname]);
-
-    return res.rows.length > 0;
-  }
-
   async run() {
     const channel = this.msg.channel;
     const splited = this.msg.content.split(' ');
-    if (splited.length != 3 || (splited[1] != '캐릭터' && splited[1] != '무브셋')) {
+    if (!(splited.length == 3 && (splited[1] == '캐릭터' || splited[1] == '무브셋'))
+        && !(splited.length == 4 && splited[1] == '고유무브셋')) {
       await channel.send(`명령어 규약이 맞지 않습니다. 다음 규약을 맞춰서 입력해주세요. (약어와 이름에 공백은 있으면 안됩니다.)
 \`\`\`?약어제거 캐릭터 제거할약어\`\`\`
 or
-\`\`\`?약어제거 무브셋 제거할약어\`\`\``);
+\`\`\`?약어제거 무브셋 제거할약어\`\`\`
+or
+\`\`\`?약어제거 고유무브셋 캐릭터(약어) 제거할약어\`\`\``);
       return;
     }
 
@@ -294,6 +346,8 @@ or
       await this.runRemoveCharacterNicknameCommand();
     } else if (splited[1] == '무브셋') {
       await this.runRemoveMoveNicknameCommand();
+    } else if (splited[1] == '고유무브셋') {
+      await this.runRemoveCharacterMoveNicknameCommand();
     }
   }
 
@@ -302,7 +356,7 @@ or
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
 
-    if (!(await this.isCharacterNicknameInDB(nickname))) {
+    if (!(await this.bot.isCharacterNicknameInDB(nickname))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
@@ -321,13 +375,34 @@ or
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
 
-    if (!(await this.isMoveNicknameInDB(nickname))) {
+    if (!(await this.bot.isMoveNicknameInDB(nickname))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
 
     try {
       await this.bot.db.query(`DELETE FROM move_nickname WHERE nickname = ($1)`, [nickname]);
+
+      await channel.send(`제거 완료!`);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async runRemoveCharacterMoveNicknameCommand() {
+    const channel = this.msg.channel;
+    const splited = this.msg.content.split(' ');
+
+    const charName = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+    const nickname = splited[3].toLowerCase();
+
+    if (!(await this.bot.isCharacterMoveNicknameInDB(nickname, charName))) {
+      await channel.send(`존재하지 않는 약어입니다.`);
+      return;
+    }
+
+    try {
+      await this.bot.db.query(`DELETE FROM move_nickname WHERE nickname = ($1) AND "character" = ($2)`, [nickname, charName]);
 
       await channel.send(`제거 완료!`);
     } catch (e) {

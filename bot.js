@@ -47,8 +47,6 @@ async function init() {
   });
 
   client.on("messageCreate", async msg => {
-    const channel = msg.channel;
-
     if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
       await frameBot.runFrameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어추가") {
