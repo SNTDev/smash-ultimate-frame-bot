@@ -2,7 +2,8 @@ const Discord = require('discord.js');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const PGClient = require('pg').Client;
+const pg = require('pg');
+const PGClient = pg.Client;
 const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
@@ -18,7 +19,12 @@ let db;
 let allCharacterFrameData;
 
 async function initDB() {
-  const client = new PGClient(process.env.DATABASE_URL);
+  const client = new PGClient({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
   await client.connect();
 
   return client;
