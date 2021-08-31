@@ -1,22 +1,18 @@
 const Discord = require('discord.js');
 const dotenv = require('dotenv');
-dotenv.config();
+const redis = require("redis");
+dotenv.config({});
 
 const pg = require('pg');
 const PGClient = pg.Client;
 const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
-const { FrameBot } = require('./message-poster');
+const { FrameBot } = require('./frame-message-poster');
+const { MatchupBot } = require('./matchup-message-poster');
 
 const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
-const numberReactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '0️⃣'];
-
-let characterNames = [];
-// let character_move_names = [];
-let db;
-let allCharacterFrameData;
 
 async function initDB() {
   const client = !!process.env.DATABASE_URL ? new PGClient({
@@ -30,17 +26,27 @@ async function initDB() {
   return client;
 }
 
-async function isNicknameInDB(nickname) {
-  const res = await db.query('SELECT character FROM character_nickname WHERE nickname = ($1)', [nickname]);
+async function initRedis() {
+  const client = redis.createClient({
+    socket: {
+      url: process.env.REDIS_URL,
+    },
+  });
+  client.on('error', (err) => console.log('Redis Client Error', err));
 
-  return res.rows.length > 0;
+  await client.connect();
+
+  return client;
 }
 
 async function init() {
-  db = await initDB();
-  allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
+  const db = await initDB();
+  const redis = await initRedis();
+  
+  const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
 
   const frameBot = new FrameBot(db, client, allCharacterFrameData);
+  const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
 
   client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -53,6 +59,8 @@ async function init() {
       await frameBot.runAddNicknameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어제거") {
       await frameBot.runRemoveNicknameCommand(msg);
+    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
+      await matchupBot.runMatchupCommand(msg);
     }
   });
 
