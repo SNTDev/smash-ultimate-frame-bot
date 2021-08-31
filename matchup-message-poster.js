@@ -55,10 +55,7 @@ class BotMatchupCommand {
     const data = JSON.parse(await this.bot.redis.get(`${charName1}-${charName2}`));
     if (!!data) return data;
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox','--disable-setuid-sandbox'],
-    });
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.goto(`https://ultimategamedata.com/matchup/?character1=${charName1}&character2=${charName2}`, {
     });
