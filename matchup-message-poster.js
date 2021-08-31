@@ -60,9 +60,10 @@ class BotMatchupCommand {
     await page.goto(`https://ultimategamedata.com/matchup/?character1=${charName1}&character2=${charName2}`, {
     });
     const content = await page.content();
+    console.log(content);
     const res = this.parseContent(content);
     
-    if(res.data.legnth === 0) throw new Error('캐릭터를 찾을 수 없습니다.');
+    if(res.data.legnth === 0) throw new Error(res);
 
     await this.bot.redis.set(`${charName1}-${charName2}`, JSON.stringify(res), {EX: 60 * 60 * 24 * 30});
     return res;
@@ -96,6 +97,7 @@ class BotMatchupCommand {
       const embedFrameData = this.createEmbedFrameMessage(gameResult);
       await channel.send({ embeds: [embedFrameData] });
     } catch(e) {
+      console.log(res);
       await channel.send(`캐릭터를 찾을 수 없습니다.`);
     }
   }
