@@ -99,6 +99,7 @@ class BotMatchupCommand {
       const embedFrameData = this.createEmbedFrameMessage(gameResult);
       await channel.send({ embeds: [embedFrameData] });
     } catch(e) {
+      console.log(e);
       await channel.send(`캐릭터를 찾을 수 없습니다.`);
     }
   }
