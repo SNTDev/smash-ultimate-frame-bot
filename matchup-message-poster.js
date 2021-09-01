@@ -57,7 +57,7 @@ class BotMatchupCommand {
 
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox','--disable-setuid-sandbox'],
+      args: ['--no-sandbox','--disable-setuid-sandbox', '--single-process'],
     });
     const page = await browser.newPage();
     await page.goto(`https://ultimategamedata.com/matchup/?character1=${charName1}&character2=${charName2}`, {
