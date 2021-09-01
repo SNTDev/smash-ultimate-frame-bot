@@ -226,7 +226,8 @@ or
     const nickname = splited[2].toLowerCase();
     const charName = (await this.bot.getTranslatedCharacterName(splited[3].toLowerCase())).toLowerCase();
 
-    if (!this.characterNames.find(e => e == charName)) {
+    // 호카리, 포트 승률을 위한 예외처리 추가
+    if (!this.characterNames.find(e => e == charName) && !(charName == 'pyra_and_mythra') && !(charName == 'pokemon_trainer')) {
       await channel.send(`해당되는 캐릭터가 없습니다.`);
       return;
     }
