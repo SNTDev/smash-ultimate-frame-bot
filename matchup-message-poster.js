@@ -77,6 +77,9 @@ class BotMatchupCommand {
     const embedFrameMessageFields = {
       title: `${firstCharacterName} vs ${secondCharacterName}`,
       fields: result.data,
+      footer: {
+        text: `Reference: https://ultimategamedata.com/`,
+      },
     }
 
     return embedFrameMessageFields;
