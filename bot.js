@@ -4,7 +4,7 @@ const redis = require("redis");
 dotenv.config({});
 
 const pg = require('pg');
-const PGClient = pg.Client;
+const PGPool = pg.Pool;
 const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
@@ -15,18 +15,18 @@ const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
 async function initDB() {
-  const client = !!process.env.DATABASE_URL ? new PGClient({
+  const pool = !!process.env.DATABASE_URL ? new PGPool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
-  }) : new PGClient();
-  await client.connect();
-  client.on('error', (err, client) => {
+  }) : new PGPool();
+  await pool.connect();
+  pool.on('error', (err, client) => {
     console.log('postgres connection error : ' + err);
   });
 
-  return client;
+  return pool;
 }
 
 async function initRedis() {
