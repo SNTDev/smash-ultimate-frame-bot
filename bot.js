@@ -4,7 +4,7 @@ const redis = require("redis");
 dotenv.config({});
 
 const pg = require('pg');
-const PGPool = pg.Pool;
+const PGClient = pg.Client;
 const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
@@ -15,18 +15,18 @@ const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
 async function initDB() {
-  const pool = !!process.env.DATABASE_URL ? new PGPool({
+  const client = !!process.env.DATABASE_URL ? new PGClient({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
-  }) : new PGPool();
-  await pool.connect();
-  pool.on('error', (err, client) => {
+  }) : new PGClient();
+  await client.connect();
+  client.on('error', (err, client) => {
     console.log('postgres connection error : ' + err);
   });
 
-  return pool;
+  return client;
 }
 
 async function initRedis() {
@@ -54,19 +54,26 @@ async function init() {
   });
 
   client.on("messageCreate", async msg => {
-    const db = await initDB();
     if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
+      const db = await initDB();
       const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runFrameCommand(msg);
+      db.end();
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어추가") {
+      const db = await initDB();
       const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runAddNicknameCommand(msg);
+      db.end();
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어제거") {
-      const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
+      const db = await initDB();
+      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runRemoveNicknameCommand(msg);
+      db.end();
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
+      const db = await initDB();
       const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
       await matchupBot.runMatchupCommand(msg);
+      db.end();
     }
   });
 
