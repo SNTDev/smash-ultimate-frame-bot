@@ -22,6 +22,9 @@ async function initDB() {
     },
   }) : new PGClient();
   await client.connect();
+  client.on('error', (err, client) => {
+    console.log('postgres connection error : ' + err);
+  });
 
   return client;
 }
@@ -42,7 +45,7 @@ async function initRedis() {
 async function init() {
   const db = await initDB();
   const redis = await initRedis();
-  
+
   const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
 
   const frameBot = new FrameBot(db, client, allCharacterFrameData);
