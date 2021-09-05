@@ -43,27 +43,29 @@ async function initRedis() {
 }
 
 async function init() {
-  const db = await initDB();
+  // const db = await initDB();
   // const redis = await initRedis();
   const redis = null;
 
   const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
-
-  const frameBot = new FrameBot(db, client, allCharacterFrameData);
-  const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
 
   client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
   });
 
   client.on("messageCreate", async msg => {
+    const db = await initDB();
     if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
+      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runFrameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어추가") {
+      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runAddNicknameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어제거") {
+      const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
       await frameBot.runRemoveNicknameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
+      const matchupBot = new MatchupBot(db, redis, client, allCharacterFrameData);
       await matchupBot.runMatchupCommand(msg);
     }
   });
