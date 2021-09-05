@@ -52,8 +52,8 @@ class BotMatchupCommand {
   }
 
   async getDataFromUGD(charName1, charName2) {
-    const data = JSON.parse(await this.bot.redis.get(`${charName1}-${charName2}`));
-    if (!!data) return data;
+    // const data = JSON.parse(await this.bot.redis.get(`${charName1}-${charName2}`));
+    // if (!!data) return data;
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -68,7 +68,7 @@ class BotMatchupCommand {
     
     if(res.data.legnth === 0) throw new Error(res);
 
-    await this.bot.redis.set(`${charName1}-${charName2}`, JSON.stringify(res), {EX: 60 * 60 * 24 * 30});
+    // await this.bot.redis.set(`${charName1}-${charName2}`, JSON.stringify(res), {EX: 60 * 60 * 24 * 30});
     return res;
   }
 
