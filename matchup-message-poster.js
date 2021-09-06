@@ -65,6 +65,7 @@ class BotMatchupCommand {
     const content = await page.content();
     const res = this.parseContent(content);
     page.close();
+    browser.close();
     
     if(res.data.legnth === 0) throw new Error(res);
 
@@ -95,8 +96,11 @@ class BotMatchupCommand {
     }
 
     try{
-      const charName1 = (await this.bot.getTranslatedCharacterName(splited[1].toLowerCase())).toLowerCase();
-      const charName2 = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+      let charName1 = (await this.bot.getTranslatedCharacterName(splited[1].toLowerCase())).toLowerCase();
+      let charName2 = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+
+      if (charName1 == 'minmin') charName1 = 'min_min';
+      if (charName2 == 'minmin') charName2 = 'min_min';
 
       const gameResult = await this.getDataFromUGD(charName1, charName2);
 
