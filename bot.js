@@ -44,8 +44,8 @@ async function initRedis() {
 
 async function init() {
   // const db = await initDB();
-  // const redis = await initRedis();
-  const redis = null;
+  const redis = await initRedis();
+  // const redis = null;
 
   const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
 
