@@ -33,8 +33,8 @@ async function scrapCharacterNames() {
     return e.attribs.class.replace(/charactericon /g, '');
   });
 
-  //slice 'stats'
-  return names.toArray().slice(1);
+  //slice 'stats', 'simple and clean'
+  return names.toArray().slice(1, names.length - 1);
 }
 
 async function scrapCharacterFrames(name) {
