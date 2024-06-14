@@ -1,13 +1,37 @@
 version: '3.6'
 services:
-  postgres:
+  db:
     image: postgres:12
     restart: always
     volumes:
-    - db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: postgrespassword
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PASSWORD=postgres
     ports:
     - "5432:5432"
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    restart: always
+  app:
+    image: node:20-alpine
+    depends_on:
+      - db
+      - redis
+    environment:
+      - PGNAME=postgres
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGPORT=5432
+      - PGHOST=db
+      - DATABASE_URL=postgres://postgres:postgres@db:5432
+      - REDIS_URL=redis://redis:6379
+    working_dir: /app
+    volumes:
+        - .:/app
+    entrypoint: ["node", "bot.js"]
+    
 volumes:
   db_data:
