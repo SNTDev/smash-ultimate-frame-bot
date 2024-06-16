@@ -46,7 +46,7 @@ async function initRedis() {
 async function init() {
   const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
 
-  // const db = await initDB();
+  const db = await initDB();
   // const redis = await initRedis();
   const redis = null;
 
@@ -54,22 +54,15 @@ async function init() {
     console.log(`Logged in as ${client.user.tag}!`);
   });
 
+  const frameBot = new FrameBot(db, client, allCharacterFrameData);
+
   client.on("messageCreate", async msg => {
     if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
-      const db = await initDB();
-      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runFrameCommand(msg);
-      db.end();
     } else if (msg.content.startsWith('?') && msg.author.id == env.ADMIN_USER_ID && msg.content.split(' ')[0] == "?약어추가") {
-      const db = await initDB();
-      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runAddNicknameCommand(msg);
-      db.end();
     } else if (msg.content.startsWith('?') && msg.author.id == env.ADMIN_USER_ID && msg.content.split(' ')[0] == "?약어제거") {
-      const db = await initDB();
-      const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runRemoveNicknameCommand(msg);
-      db.end();
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
       // https://ultimategamedata.com/ 사이트가 업뎃이 멈춰서 쓸 이유가 없다 생각해서 matchupbot은 잠시 주석처리
       // 어찌할지는 추후 생각해보겠슴
