@@ -24,7 +24,7 @@ const fs = require('fs');
 async function scrapCharacterNames() {
   const res = await axios({
     method: 'get',
-    url: `https://ultimateframedata.com`,
+    url: `https://ultimateframedata.com/smash`,
   });
 
   const $ = cheerio.load(res.data);
@@ -40,7 +40,7 @@ async function scrapCharacterNames() {
 async function scrapCharacterFrames(name) {
   const res = await axios({
     method: 'get',
-    url: `https://ultimateframedata.com/${name}.php`,
+    url: `https://ultimateframedata.com/${name}`,
   });
 
   const $ = cheerio.load(res.data);
