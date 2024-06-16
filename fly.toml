@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for smash-frame-discord-bot on 2024-06-15T23:14:09+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'smash-frame-discord-bot'
+primary_region = 'nrt'
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[deploy]
+  cmd = ["node", "bot.js"]
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
