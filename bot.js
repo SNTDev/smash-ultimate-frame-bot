@@ -10,6 +10,7 @@ const fs = require('fs');
 const { scrapAll } = require('./ultimate-crawler');
 const { FrameBot } = require('./frame-message-poster');
 const { MatchupBot } = require('./matchup-message-poster');
+const { env } = require('process');
 
 const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
@@ -59,12 +60,12 @@ async function init() {
       const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runFrameCommand(msg);
       db.end();
-    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어추가") {
+    } else if (msg.content.startsWith('?') && msg.author.id == env.ADMIN_USER_ID && msg.content.split(' ')[0] == "?약어추가") {
       const db = await initDB();
       const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runAddNicknameCommand(msg);
       db.end();
-    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?약어제거") {
+    } else if (msg.content.startsWith('?') && msg.author.id == env.ADMIN_USER_ID && msg.content.split(' ')[0] == "?약어제거") {
       const db = await initDB();
       const frameBot = new FrameBot(db, client, allCharacterFrameData);
       await frameBot.runRemoveNicknameCommand(msg);
