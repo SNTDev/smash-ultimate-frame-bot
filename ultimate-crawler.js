@@ -109,6 +109,43 @@ async function scrapAll() {
   return res;
 }
 
+async function scrapDingDong() {
+  // https://monke.gg/
+  // https://monke.gg/percents.json?v=6_6_24
+  
+  const response = await axios({
+    method: 'get',
+    url: `https://monke.gg/percents.json?v=6_6_24`,
+  });
+
+  const ps2DKOs = {};
+
+  response.data.forEach((e) => {
+    let name = e['Name'].toLowerCase().replaceAll(' ', '_').replaceAll('&', 'and');
+    ps2DKOs[name] = {};
+
+    // 호카리, 포트
+    if (e['Characters'] != '') {
+      return;
+    }
+
+    const fighterData = ps2DKOs[name];
+
+    fighterData['optimized'] = e.Optimized;
+    fighterData['minimum'] = e.Minimum;
+    fighterData['maximum'] = e.Maximum;
+    fighterData['dtilt_low'] =  e.Dtilt.Low;
+    fighterData['dtilt_max_rage'] = e.Dtilt.MaxRage;
+    fighterData['apdko_optimized'] = e.apDKO.Optimized;
+    fighterData['apdko_minimum'] = e.apDKO.Minimum;
+    fighterData['apdko_maximum'] = e.apDKO.Maximum;
+  });
+
+  fs.writeFileSync('dko-data.json', JSON.stringify(ps2DKOs));
+}
+
 module.exports = {
   scrapAll,
 };
+
+scrapDingDong();

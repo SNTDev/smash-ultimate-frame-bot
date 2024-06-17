@@ -63,6 +63,8 @@ async function init() {
       await frameBot.runAddNicknameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.author.id == env.ADMIN_USER_ID && msg.content.split(' ')[0] == "?약어제거") {
       await frameBot.runRemoveNicknameCommand(msg);
+    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?딩동") {
+      await frameBot.runDingDongCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
       // https://ultimategamedata.com/ 사이트가 업뎃이 멈춰서 쓸 이유가 없다 생각해서 matchupbot은 잠시 주석처리
       // 어찌할지는 추후 생각해보겠슴

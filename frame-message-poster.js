@@ -1,6 +1,9 @@
+const fs = require('fs');
 
 const {CommonUtilBot} = require('./common');
 const { MessageEmbed } = require('discord.js');
+
+const allCharacterDingDongData = fs.existsSync('./dko-data.json') ? JSON.parse(fs.readFileSync('./dko-data.json')) : {};
 class FrameBot extends CommonUtilBot {
   constructor(db, client, allCharacterFrameData) {
     super(db, client, allCharacterFrameData);
@@ -19,6 +22,11 @@ class FrameBot extends CommonUtilBot {
   async runRemoveNicknameCommand(msg) {
     const removeNicknameCommand = new BotRemoveNicknameCommand(this, msg);
     await removeNicknameCommand.run();
+  }
+
+  async runDingDongCommand(msg) {
+    const dingDongCommand = new BotDingDongCommand(this, msg);
+    await dingDongCommand.run();
   }
 }
 
@@ -373,6 +381,73 @@ or
     } catch (e) {
       console.log(e);
     }
+  }
+}
+
+class BotDingDongCommand {
+  constructor(bot, msg) {
+    this.bot = bot;
+    this.msg = msg;
+  }
+
+  async run() {
+    const channel = this.msg.channel;
+    const splited = this.msg.content.split(' ');
+    const nickname = splited[1].toLowerCase();
+
+    if (!(splited.length == 2)) {
+      await channel.send(`명령어 규약이 맞지 않습니다. 다음 규약을 맞춰서 입력해주세요. (약어와 이름에 공백은 있으면 안됩니다.)
+\`\`\`?딩동 캐릭터\`\`\``);
+      return;
+    }
+
+    if (!(await this.bot.isCharacterNicknameInDB(nickname))) {
+      await channel.send(`존재하지 않는 약어입니다.`);
+      return;
+    }
+
+    const capitalize = s => s && s[0].toUpperCase() + s.slice(1);
+    const charName = (await this.bot.getTranslatedCharacterName(nickname)).toLowerCase();
+    const embedDingDongMessage = this.createEmbedDingDongMessage(capitalize(charName), allCharacterDingDongData[charName]);
+
+    await channel.send({ embeds: [embedDingDongMessage] });
+  }
+
+  createEmbedDingDongMessage(charName, charDingDongData) {
+    const embedDingDongMessageFields = {
+      title: `${charName}`,
+      fields: [
+        {
+          name: 'Percentage',
+          value: `[${charDingDongData['optimized']}] ${charDingDongData['minimum']} - ${charDingDongData['maximum']}` || '-',
+        },
+        {
+          name: 'Optimized',
+          value: `${charDingDongData['optimized']}` || '-',
+        },
+        {
+          name: 'Minimum',
+          value: `${charDingDongData['minimum']}` || '-',
+        },
+        {
+          name: 'Maximum',
+          value: `${charDingDongData['maximum']}` || '-',
+        },
+        {
+          name: 'Dtilt Low',
+          value: `${charDingDongData['dtilt_low']}` || '-',
+        },
+        {
+          name: 'Dtilt Max Rage',
+          value: `${charDingDongData['dtilt_max_rage']}` || '-',
+        },
+      ],
+      footer: {
+        text: `All percents in this box are for PS2 / FD.`,
+      },
+    }
+
+    return embedDingDongMessageFields;
   }
 }
 
