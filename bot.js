@@ -5,6 +5,7 @@ dotenv.config({});
 
 const pg = require('pg');
 const PGClient = pg.Client;
+const PGPool = pg.Pool;
 const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
@@ -16,8 +17,9 @@ const Intents = Discord.Intents;
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
 async function initDB() {
-  const client = !!process.env.DATABASE_URL ? new PGClient({
+  const client = !!process.env.DATABASE_URL ? new PGPool({
     connectionString: process.env.DATABASE_URL,
+    max: 5,
     // ssl: {
     //   rejectUnauthorized: false,
     // },
