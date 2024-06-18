@@ -11,22 +11,30 @@ class FrameBot extends CommonUtilBot {
 
   async runFrameCommand(msg) {
     const frameCommand = new BotFrameCommand(this, msg);
+    await this.db.connect();
     await frameCommand.run();
+    await this.db.release();
   }
 
   async runAddNicknameCommand(msg) {
     const addNicknameCommand = new BotAddNicknameCommand(this, msg);
+    await this.db.connect();
     await addNicknameCommand.run();
+    await this.db.release();
   }
 
   async runRemoveNicknameCommand(msg) {
     const removeNicknameCommand = new BotRemoveNicknameCommand(this, msg);
+    await this.db.connect();
     await removeNicknameCommand.run();
+    await this.db.release();
   }
 
   async runDingDongCommand(msg) {
     const dingDongCommand = new BotDingDongCommand(this, msg);
+    await this.db.connect();
     await dingDongCommand.run();
+    await this.db.release();
   }
 }
 
