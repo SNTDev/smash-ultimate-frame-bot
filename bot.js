@@ -24,10 +24,10 @@ async function initDB() {
     //   rejectUnauthorized: false,
     // },
   }) : new PGClient();
-  // await client.connect();
-  // client.on('error', (err, client) => {
-  //   console.log('postgres connection error : ' + err);
-  // });
+  await client.connect();
+  client.on('error', (err, client) => {
+    console.log('postgres connection error : ' + err);
+  });
 
   return client;
 }
