@@ -1,47 +1,63 @@
 const fs = require('fs');
 
-const {CommonUtilBot} = require('./common');
+const {CommonUtilBot, DBUtil} = require('./common');
 const { MessageEmbed } = require('discord.js');
 
 const allCharacterDingDongData = fs.existsSync('./dko-data.json') ? JSON.parse(fs.readFileSync('./dko-data.json')) : {};
-class FrameBot extends CommonUtilBot {
-  constructor(db, client, allCharacterFrameData) {
-    super(db, client, allCharacterFrameData);
+class FrameBot {
+  constructor(pool, client, allCharacterFrameData) {
+    this.pool = pool;
+    this.client = client;
+    this.allCharacterFrameData = allCharacterFrameData;
   }
 
   async runFrameCommand(msg) {
-    const frameCommand = new BotFrameCommand(this, msg);
-    await this.db.connect();
+    const db = await this.pool.connect();
+    const frameCommand = new BotFrameCommand(this, db, msg);
+
     await frameCommand.run();
-    await this.db.release();
+    
+    await db.release();
   }
 
   async runAddNicknameCommand(msg) {
-    const addNicknameCommand = new BotAddNicknameCommand(this, msg);
-    await this.db.connect();
+    const db = await this.pool.connect();
+    const addNicknameCommand = new BotAddNicknameCommand(this, db, msg);
+
     await addNicknameCommand.run();
-    await this.db.release();
+
+    await db.release();
   }
 
   async runRemoveNicknameCommand(msg) {
-    const removeNicknameCommand = new BotRemoveNicknameCommand(this, msg);
-    await this.db.connect();
+    const db = await this.pool.connect();
+    const removeNicknameCommand = new BotRemoveNicknameCommand(this, db, msg);
+
     await removeNicknameCommand.run();
-    await this.db.release();
+
+    await db.release();
   }
 
   async runDingDongCommand(msg) {
-    const dingDongCommand = new BotDingDongCommand(this, msg);
-    await this.db.connect();
+    const db = await this.pool.connect();
+    const dingDongCommand = new BotDingDongCommand(this, db, msg);
+    
     await dingDongCommand.run();
+    
     await this.db.release();
   }
 }
 
-class BotFrameCommand {
-  constructor(bot, msg) {
+class BotCommand {
+  constructor(bot, db, msg) {
     this.bot = bot;
+    this.db = db;
     this.msg = msg;
+  }
+}
+class BotFrameCommand extends BotCommand {
+  constructor(bot, db, msg) {
+    super(bot, db, msg);
     this.numberReactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '0️⃣'];
   }
 
@@ -102,10 +118,10 @@ class BotFrameCommand {
 \`\`\`?프레임 캐릭터이름 무브셋이름\`\`\``);
       return;
     }
-    const charName = (await this.bot.getTranslatedCharacterName(splited[1].toLowerCase())).toLowerCase();
-    const isCharacterMove = await this.bot.isCharacterMoveNicknameInDB(splited[2].toLowerCase(), charName);
-    const moveName = isCharacterMove ? (await this.bot.getTranslatedCharacterMoveName(splited[2].toLowerCase(), charName)).toLowerCase()
-                                     : (await this.bot.getTranslatedMoveName(splited[2].toLowerCase())).toLowerCase();
+    const charName = (await DBUtil.getTranslatedCharacterName(this.db, splited[1].toLowerCase())).toLowerCase();
+    const isCharacterMove = await DBUtil.isCharacterMoveNicknameInDB(this.db, splited[2].toLowerCase(), charName);
+    const moveName = isCharacterMove ? (await DBUtil.getTranslatedCharacterMoveName(this.db, splited[2].toLowerCase(), charName)).toLowerCase()
+                                     : (await DBUtil.getTranslatedMoveName(this.db, splited[2].toLowerCase())).toLowerCase();
     try {
       if (this.bot.allCharacterFrameData[charName] == null) {
         await channel.send(`캐릭터를 찾을 수 없습니다.`);
@@ -204,10 +220,9 @@ class BotFrameCommand {
   }
 }
 
-class BotAddNicknameCommand {
-  constructor(bot, msg) {
-    this.bot = bot;
-    this.msg = msg;
+class BotAddNicknameCommand extends BotCommand {
+  constructor(bot, db, msg) {
+    super(bot, db, msg);
     this.characterNames = Object.keys(bot.allCharacterFrameData);
   }
 
@@ -240,7 +255,7 @@ or
     const channel = this.msg.channel;
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
-    const charName = (await this.bot.getTranslatedCharacterName(splited[3].toLowerCase())).toLowerCase();
+    const charName = (await DBUtil.getTranslatedCharacterName(this.db, splited[3].toLowerCase())).toLowerCase();
 
     // 호카리, 포트 승률을 위한 예외처리 추가
     if (!this.characterNames.find(e => e == charName) && !(charName == 'pyra_and_mythra') && !(charName == 'pokemon_trainer')) {
@@ -249,7 +264,7 @@ or
     }
     try {
       // console.log(nickname, charName);
-      await this.bot.db.query(`INSERT INTO character_nickname(nickname, "character") VALUES ($1, $2)`, [nickname, charName]);
+      await this.db.query(`INSERT INTO character_nickname(nickname, "character") VALUES ($1, $2)`, [nickname, charName]);
 
       await channel.send(`추가 완료! 이제 캐릭터 이름 ${splited[2]} -> ${charName}로 인식합니다.`);
     } catch (e) {
@@ -264,11 +279,11 @@ or
     const channel = this.msg.channel;
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
-    const moveName = (await this.bot.getTranslatedMoveName(splited[3].toLowerCase())).toLowerCase();
+    const moveName = (await DBUtil.getTranslatedMoveName(this.db, splited[3].toLowerCase())).toLowerCase();
 
     try {
       // console.log(nickname, moveName);
-      await this.bot.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, 'all')`, [nickname, moveName]);
+      await this.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, 'all')`, [nickname, moveName]);
 
       await channel.send(`추가 완료! 이제 무브셋 이름 ${splited[2]} -> ${moveName}로 인식합니다.`);
     } catch (e) {
@@ -283,15 +298,15 @@ or
     const channel = this.msg.channel;
     const splited = this.msg.content.split(' ');
 
-    const charName = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+    const charName = (await DBUtil.getTranslatedCharacterName(this.db, splited[2].toLowerCase())).toLowerCase();
     const nickname = splited[3].toLowerCase();
-    const isCharacterMove = await this.bot.isCharacterMoveNicknameInDB(splited[4].toLowerCase(), charName);
-    const moveName = isCharacterMove ? (await this.bot.getTranslatedCharacterMoveName(splited[4].toLowerCase(), charName)).toLowerCase()
-                                     : (await this.bot.getTranslatedMoveName(splited[4].toLowerCase())).toLowerCase();
+    const isCharacterMove = await DBUtil.isCharacterMoveNicknameInDB(this.db, splited[4].toLowerCase(), charName);
+    const moveName = isCharacterMove ? (await DBUtil.getTranslatedCharacterMoveName(this.db, splited[4].toLowerCase(), charName)).toLowerCase()
+                                     : (await DBUtil.getTranslatedMoveName(this.db, splited[4].toLowerCase())).toLowerCase();
 
     try {
       // console.log(nickname, moveName);
-      await this.bot.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, $3)`, [nickname, moveName, charName]);
+      await this.db.query(`INSERT INTO move_nickname(nickname, move, "character") VALUES ($1, $2, $3)`, [nickname, moveName, charName]);
 
       await channel.send(`추가 완료! 이제 캐릭터 ${charName}에 한하여 무브셋 이름 ${splited[3]} -> ${moveName}로 인식합니다.`);
     } catch (e) {
@@ -303,10 +318,9 @@ or
   }
 }
 
-class BotRemoveNicknameCommand {
-  constructor(bot, msg) {
-    this.bot = bot;
-    this.msg = msg;
+class BotRemoveNicknameCommand extends BotCommand {
+  constructor(bot, db, msg) {
+    super(bot, db, msg);
   }
 
   async run() {
@@ -337,13 +351,13 @@ or
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
 
-    if (!(await this.bot.isCharacterNicknameInDB(nickname))) {
+    if (!(await DBUtil.isCharacterNicknameInDB(this.db, nickname))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
 
     try {
-      await this.bot.db.query(`DELETE FROM character_nickname WHERE nickname = ($1)`, [nickname]);
+      await this.db.query(`DELETE FROM character_nickname WHERE nickname = ($1)`, [nickname]);
 
       await channel.send(`제거 완료!`);
     } catch (e) {
@@ -356,13 +370,13 @@ or
     const splited = this.msg.content.split(' ');
     const nickname = splited[2].toLowerCase();
 
-    if (!(await this.bot.isMoveNicknameInDB(nickname))) {
+    if (!(await DBUtil.isMoveNicknameInDB(this.db,nickname))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
 
     try {
-      await this.bot.db.query(`DELETE FROM move_nickname WHERE nickname = ($1)`, [nickname]);
+      await this.db.query(`DELETE FROM move_nickname WHERE nickname = ($1)`, [nickname]);
 
       await channel.send(`제거 완료!`);
     } catch (e) {
@@ -374,16 +388,16 @@ or
     const channel = this.msg.channel;
     const splited = this.msg.content.split(' ');
 
-    const charName = (await this.bot.getTranslatedCharacterName(splited[2].toLowerCase())).toLowerCase();
+    const charName = (await DBUtil.getTranslatedCharacterName(this.db, splited[2].toLowerCase())).toLowerCase();
     const nickname = splited[3].toLowerCase();
 
-    if (!(await this.bot.isCharacterMoveNicknameInDB(nickname, charName))) {
+    if (!(await DBUtil.isCharacterMoveNicknameInDB(this.db, nickname, charName))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
 
     try {
-      await this.bot.db.query(`DELETE FROM move_nickname WHERE nickname = ($1) AND "character" = ($2)`, [nickname, charName]);
+      await this.db.query(`DELETE FROM move_nickname WHERE nickname = ($1) AND "character" = ($2)`, [nickname, charName]);
 
       await channel.send(`제거 완료!`);
     } catch (e) {
@@ -392,10 +406,9 @@ or
   }
 }
 
-class BotDingDongCommand {
-  constructor(bot, msg) {
-    this.bot = bot;
-    this.msg = msg;
+class BotDingDongCommand extends BotCommand {
+  constructor(bot, db, msg) {
+    super(bot, db, msg);
   }
 
   async run() {
@@ -409,13 +422,13 @@ class BotDingDongCommand {
       return;
     }
 
-    if (!(await this.bot.isCharacterNicknameInDB(nickname))) {
+    if (!(await DBUtil.isCharacterNicknameInDB(this.db, nickname))) {
       await channel.send(`존재하지 않는 약어입니다.`);
       return;
     }
 
     const capitalize = s => s && s[0].toUpperCase() + s.slice(1);
-    const charName = (await this.bot.getTranslatedCharacterName(nickname)).toLowerCase();
+    const charName = (await DBUtil.getTranslatedCharacterName(this.db, nickname)).toLowerCase();
     const embedDingDongMessage = this.createEmbedDingDongMessage(capitalize(charName), allCharacterDingDongData[charName]);
 
     await channel.send({ embeds: [embedDingDongMessage] });
