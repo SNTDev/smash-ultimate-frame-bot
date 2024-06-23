@@ -10,6 +10,7 @@ const fs = require('fs');
 
 const { scrapAll } = require('./ultimate-crawler');
 const { FrameBot } = require('./frame-message-poster');
+const { ImageBot } = require('./image-message-poster');
 const { MatchupBot } = require('./matchup-message-poster');
 const { env } = require('process');
 
@@ -48,7 +49,7 @@ async function initRedis() {
 async function init() {
   const allCharacterFrameData = fs.existsSync('./character-frame-data.json') ? JSON.parse(fs.readFileSync('./character-frame-data.json')) : await scrapAll();
 
-  const db = await initDB();
+  const pool = await initDB();
   // const redis = await initRedis();
   const redis = null;
 
@@ -56,7 +57,8 @@ async function init() {
     console.log(`Logged in as ${client.user.tag}!`);
   });
 
-  const frameBot = new FrameBot(db, client, allCharacterFrameData);
+  const frameBot = new FrameBot(pool, client, allCharacterFrameData);
+  const imageBot = new ImageBot(pool);
 
   client.on("messageCreate", async msg => {
     if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?프레임") {
@@ -67,7 +69,9 @@ async function init() {
       await frameBot.runRemoveNicknameCommand(msg);
     } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?딩동") {
       await frameBot.runDingDongCommand(msg);
-    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
+    } else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?티어표") {
+      await imageBot.runTierListCommand(msg);
+    }else if (msg.content.startsWith('?') && msg.content.split(' ')[0] == "?맵별승률") {
       // https://ultimategamedata.com/ 사이트가 업뎃이 멈춰서 쓸 이유가 없다 생각해서 matchupbot은 잠시 주석처리
       // 어찌할지는 추후 생각해보겠슴
 
